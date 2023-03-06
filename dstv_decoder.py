@@ -4,7 +4,7 @@ class SteelPart:
     def __init__(self, path):
         self.dstv_content = self.get_dstv_content(path)
 
-        self.part_mark = self.get_partmatk()
+        self.partmark = self.get_partmatk()
         self.profile = self.get_profile()
         self.profile_type = self.get_profile_type()
         self.quantity = self.get_quantity()
@@ -17,15 +17,15 @@ class SteelPart:
     
     def __repr__(self):
         return str({
-            "part mark": self.part_mark,
+            "partmark": self.partmark,
             "profile": self.profile,
             "profile type": self.profile_type,
             "quantity": self.quantity,
-            "profile depth": self.profile_depth,
-            "web thickness": self.web_thickness,
-            "flange height": self.flange_height,
-            "flange thickness": self.flange_thickness,
-            "length": self.length,
+            "profile depth": round(self.profile_depth),
+            "web thickness": round(self.web_thickness),
+            "flange height": round(self.flange_height),
+            "flange thickness": round(self.flange_thickness),
+            "length": round(self.length),
             "holes": len(self.holes)
         })
     
@@ -69,27 +69,27 @@ class SteelPart:
     
     def get_profile_depth(self) -> int:
         line = self.dstv_content.splitlines()[11]
-        depth = round(float(line)*10)
+        depth = float(line)*10
         return depth
     
     def get_web_thickness(self) -> int:
         line = self.dstv_content.splitlines()[14]
-        thickness = round(float(line)*10)
+        thickness = float(line)*10
         return thickness
 
     def get_flange_height(self) -> int:
         line = self.dstv_content.splitlines()[12]
-        height = round(float(line)*10)
+        height = float(line)*10
         return height
 
     def get_flange_thickness(self) -> int:
         line = self.dstv_content.splitlines()[13]
-        thickness = round(float(line)*10)
+        thickness = float(line)*10
         return thickness
 
     def get_length(self) -> int:
         line = self.dstv_content.splitlines()[10]
-        length = round(float(line)*10)
+        length = float(line)*10
         return length
     
     def get_holes(self) -> list:
@@ -115,7 +115,7 @@ class Hole:
         self.slotted = slot_info["slotted"]
         self.slot_x = slot_info["slot_x"]
         self.slot_y = slot_info["slot_y"]
-        self.slot = slot_info["slot"]
+        self.size = slot_info["size"]
 
         self.x_distance = self.get_x_distance()
         self.y_distance = self.get_y_distance()
@@ -123,13 +123,13 @@ class Hole:
     def __repr__(self):
         return str({
             "surface": self.surface,
-            "diameter": self.diameter,
+            "diameter": round(self.diameter),
             "slotted": self.slotted,
-            "slot x": self.slot_x,
-            "slot y": self.slot_y,
-            "slot": self.slot,
-            "x_distance": self.x_distance,
-            "y_distance": self.y_distance
+            "slot x": round(self.slot_x),
+            "slot y": round(self.slot_y),
+            "size": self.size,
+            "x_distance": round(self.x_distance),
+            "y_distance": round(self.y_distance)
         })
     
     def get_hole_line_list(self, line_text):
@@ -147,7 +147,7 @@ class Hole:
             
     def get_diameter(self):
         diameter_string = self.hole_line[3]
-        diameter = round(float(diameter_string)*10)
+        diameter = float(diameter_string)*10
         return diameter
     
     def get_slotted(self):
@@ -155,38 +155,37 @@ class Hole:
             slotted = False
             slot_x = 0
             slot_y = 0
-            slot = None
+            size = str(round(self.diameter))
         else:
             slotted = True
-            slot_x = round(float(self.hole_line[5])*10)
-            slot_y = round(float(self.hole_line[6])*10)
-            slot = f"{self.diameter+slot_x}X{self.diameter+slot_y}"
+            slot_x = float(self.hole_line[5])*10
+            slot_y = float(self.hole_line[6])*10
+            size = f"{round(self.diameter+slot_x)}X{round(self.diameter+slot_y)}"
         return {
             "slotted": slotted,
             "slot_x": slot_x,
             "slot_y": slot_y,
-            "slot": slot
+            "size": size
         }
     
     def get_x_distance(self) -> int:
         distance_string = self.hole_line[1][:-1]
         x_distance = float(distance_string)*1000
         if self.slotted:
-            x_distance = x_distance + (self.slot_x*100)/2
-
+            x_distance = x_distance + (self.slot_x*50)
+        x_distance = x_distance
         return x_distance
     
     def get_y_distance(self) -> int:
         distance_string = self.hole_line[2]
-        y_distance = round(float(distance_string)*1000)
+        if self.surface == "front":
+            y_distance = self.part.profile_depth*100 - float(distance_string)*1000
+        else:
+            y_distance = float(distance_string)*1000
         return y_distance
 
-
-
-
-
 def main():
-    steel_part = SteelPart("1009B.nc1")
+    steel_part = SteelPart("1011B.nc1")
     for hole in steel_part.holes:
         print(hole)
 
