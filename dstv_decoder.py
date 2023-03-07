@@ -105,6 +105,7 @@ class SteelPart:
 class Hole:
     def __init__(self, part, hole_line_text: str):
         self.part = part
+        self.partmark = self.part.partmark
 
         self.hole_line = self.get_hole_line_list(hole_line_text)
 

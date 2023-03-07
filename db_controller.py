@@ -6,6 +6,11 @@ from dstv_decoder import SteelPart
 class DatabaseConnection:
     def __init__(self, database_file="database.db"):
         self.database_file = database_file
+        self.delete_old()
+    
+    def delete_old(self):
+        if os.path.exists(self.database_file):
+            os.remove(self.database_file)
     
     def connect(self):
         connection = sqlite3.connect(self.database_file)
@@ -88,6 +93,7 @@ class HoleDatabase:
         HoleId integer PRIMARY KEY,
         PartId integer,
         surface text,
+        diameter integer,
         slotted text,
         slot_x integer,
         slot_y integer,
@@ -101,7 +107,38 @@ class HoleDatabase:
         connection.close()
     
     def insert_data(self, hole):
+        connection = self.database_connection.connect()
+        cursor = connection.cursor()
         part_id = self.get_part_id(hole)
+
+        query = """INSERT INTO hole (
+        PartId,
+        surface,
+        diameter,
+        slotted,
+        slot_x,
+        slot_y,
+        size,
+        x_distance,
+        y_distance
+        )
+        VALUES (?,?,?,?,?,?,?,?,?);"""
+
+        cursor.execute(query, (
+            part_id,
+            hole.surface,
+            round(hole.diameter),
+            hole.slotted,
+            round(hole.slot_x),
+            round(hole.slot_y),
+            hole.size,
+            round(hole.x_distance),
+            round(hole.y_distance)
+            ))
+        connection.commit()
+        cursor.close()
+        connection.close()
+
 
 
 def main():
@@ -117,7 +154,7 @@ def main():
     part_database.insert_data(steel_part1)
 
     for hole in steel_part1.holes:
-        hole_database.get_part_id(hole)
+        hole_database.insert_data(hole)
 
 if __name__ == "__main__":
     main()
