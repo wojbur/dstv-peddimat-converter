@@ -6,7 +6,6 @@ from dstv_decoder import SteelPart
 class DatabaseConnection:
     def __init__(self, database_file="database.db"):
         self.database_file = database_file
-        self.delete_old()
     
     def delete_old(self):
         if os.path.exists(self.database_file):
@@ -144,6 +143,7 @@ class HoleDatabase:
 def main():
     steel_part1 = SteelPart("1009B.nc1")
     database_connection = DatabaseConnection()
+    database_connection.delete_old()
 
     part_database = PartDatabase(database_connection)
     hole_database = HoleDatabase(database_connection)

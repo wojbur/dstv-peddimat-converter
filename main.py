@@ -8,9 +8,9 @@ import sqlite3
 app = QApplication(sys.argv)
 
 scene = QGraphicsScene(0, 0, 1100, 200)
-pen = QPen(Qt.GlobalColor.black)
-pen.setStyle(Qt.PenStyle.SolidLine)
-
+solid_pen = QPen(Qt.GlobalColor.black)
+solid_pen.setStyle(Qt.PenStyle.SolidLine)
+solid_pen.setWidth(1)
 
 connection = sqlite3.connect("database.db")
 cursor = connection.cursor()
@@ -23,19 +23,20 @@ scale = 1000/dimensions[1]
 depth = dimensions[0]*scale
 length = dimensions[1]*scale
 
-rect = QGraphicsRectItem(0, 0, length, depth)
-rect.setPos(50, 50)
+front_outline = QGraphicsRectItem(0, 0, length, depth)
+front_outline.setPos(50, 50)
+front_outline.setPen(solid_pen)
 
-# brush = QBrush(Qt.GlobalColor.red)
-# rect.setBrush(brush)
+cursor.execute("SELECT flange_thickness FROM part WHERE PartId=1")
+flange_thickness = cursor.fetchone()[0]*scale
 
-pen = QPen(Qt.GlobalColor.black)
-pen.setStyle(Qt.PenStyle.DashLine)
-pen.setWidth(1)
-rect.setPen(pen)
+top_flange = QGraphicsLineItem(0, 0, length, 0)
+top_flange.setPos(70,70)
+top_flange.setPen(solid_pen)
 
-scene.addItem(rect)
 
+scene.addItem(front_outline)
+scene.addItem(top_flange)
 
 
 
