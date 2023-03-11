@@ -9,16 +9,27 @@ class PeddimatEncoder:
     def build_peddimat_string(self, partmark):
         part_data = self.load_part_data(partmark)
         rows = []
+
         rows.append(part_data["partmark"])
         rows.append(part_data["profile"])
         rows.append(part_data["profile_type"])
-
         
+        profile_info_row = self.build_profile_info_row(part_data)
+        tool_row = self.build_tool_row(partmark)
 
-        rows.append(self.build_profile_info_row(partmark, part_data))
+        tool_string = ""
+        for tool in tool_row:
+            for surface in tool:
+                tool_string += f"  {surface}"
+        
+        row_string = profile_info_row + tool_string
+
+        rows.append(row_string)
+
+
         print("\n".join(rows))
     
-    def build_profile_info_row(self, partmark, part_data):
+    def build_profile_info_row(self, part_data):
         row = []
         row.append(str(part_data["quantity"]))
         row.append(str(part_data["profile_depth"]))
@@ -56,6 +67,10 @@ class PeddimatEncoder:
         part_data = dict(cursor.fetchone())
         return part_data
     
+    def build_tool_row(self, partmark):
+        tool_row = zip(self.load_tools(partmark, "front"), self.load_tools(partmark, "bottom"), self.load_tools(partmark, "top"))
+        return tool_row
+    
     def load_tools(self, partmark, surface):
         connection = self.database_connection.connect()
         cursor = connection.cursor()
@@ -63,6 +78,8 @@ class PeddimatEncoder:
         cursor.execute("SELECT size FROM hole WHERE PartId = ? AND surface = ?", (part_id, surface))
         tools = []
         [tools.append(row[0]) for row in cursor.fetchall() if row[0] not in tools]
+        while len(tools) < 12:
+            tools.append("0")
         return tools
     
     def load_holes_data(self, partmark):
@@ -97,10 +114,10 @@ class PeddimatEncoder:
 def main():
     database_connection = DatabaseConnection("database.db")
     peddimat_encoder = PeddimatEncoder(database_connection)
-    # peddimat_encoder.load_holes_data("1009B")
-    # print(peddimat_encoder.load_tools("1002B", "top"))
-    # print(peddimat_encoder.load_part_data("1003B"))
-    peddimat_encoder.build_peddimat_string("1002B")
+
+    parts = ["1001B", "1002B", "1003B", "1004B", "1005B", "1006B", "1007B", "1008B", "1009B", "1010B", "1011B"]
+    for part in parts:
+        peddimat_encoder.build_peddimat_string(part)
 
 
 if __name__ == "__main__":

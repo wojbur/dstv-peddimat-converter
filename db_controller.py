@@ -72,16 +72,33 @@ class PartDatabase:
         connection.commit()
         cursor.close()
         connection.close()
+    
+    def remove_data(self, partmark):
+        connection = self.database_connection.connect()
+        cursor = connection.cursor()
+        cursor.execute("DELETE FROM part WHERE partmark = ?", (partmark,))
+        connection.commit()
+        cursor.close()
+        connection.close()
+    
+    def get_partmarks_list(self):
+        connection = self.database_connection.connect()
+        cursor = connection.cursor()
+        result = cursor.execute("SELECT partmark FROM part")
+        return [item[0] for item in result]
+
 
 class HoleDatabase:
     def __init__(self, database_connection):
         self.database_connection = database_connection
     
-    def get_part_id(self, hole):
+    def get_part_id(self, hole=None, partmark=None):
+        if not partmark:
+            partmark = hole.partmark
         connection = self.database_connection.connect()
         cursor = connection.cursor()
-        result = cursor.execute("SELECT PartId FROM part WHERE partmark = ?", (hole.partmark,))
-        part_id = list(result)[0][0]
+        cursor.execute("SELECT PartId FROM part WHERE partmark = ?", (partmark,))
+        part_id = cursor.fetchone()[0]
         return part_id
 
     def create_table(self):
@@ -108,7 +125,7 @@ class HoleDatabase:
     def insert_data(self, hole):
         connection = self.database_connection.connect()
         cursor = connection.cursor()
-        part_id = self.get_part_id(hole)
+        part_id = self.get_part_id(hole=hole)
 
         query = """INSERT INTO hole (
         PartId,
@@ -137,24 +154,60 @@ class HoleDatabase:
         connection.commit()
         cursor.close()
         connection.close()
+    
+    def remove_data(self, partmark):
+        connection = self.database_connection.connect()
+        cursor = connection.cursor()
+        part_id = self.get_part_id(partmark=partmark)
+        cursor.execute("DELETE FROM hole WHERE PartId = ?", (part_id,))
+        connection.commit()
+        cursor.close()
+        connection.close()
+    
+    def get_hole_info_list(self, partmark):
+        connection = self.database_connection.connect()
+        cursor = connection.cursor()
+        part_id = self.get_part_id(partmark=partmark)
+
+        query = """SELECT
+        surface,
+        size,
+        x_distance,
+        y_distance
+        FROM hole WHERE PartId = ?"""     
+        cursor.execute(query, (part_id, ))
+        return cursor.fetchall()
+
+
 
 
 
 def main():
-    steel_part1 = SteelPart("1009B.nc1")
+    parts = ["1001B.nc1", "1002B.nc1", "1003B.nc1", "1004B.nc1", "1005B.nc1", "1006B.nc1", "1007B.nc1", "1008B.nc1", "1009B.nc1", "1010B.nc1", "1011B.nc1"]
     database_connection = DatabaseConnection()
     database_connection.delete_old()
-
     part_database = PartDatabase(database_connection)
-    hole_database = HoleDatabase(database_connection)
-
     part_database.create_table()
+    hole_database = HoleDatabase(database_connection)
     hole_database.create_table()
 
-    part_database.insert_data(steel_part1)
+    for part in parts:
+        steel_part = SteelPart(part)
+        part_database.insert_data(steel_part)
 
-    for hole in steel_part1.holes:
-        hole_database.insert_data(hole)
+        for hole in steel_part.holes:
+            hole_database.insert_data(hole)
+
+def test1():
+    database_connection = DatabaseConnection()
+    part_database = PartDatabase(database_connection)
+    print(part_database.get_partmarks_list())
+
+def test2():
+    database_connection = DatabaseConnection()
+    hole_database = HoleDatabase(database_connection)
+    print(hole_database.get_hole_info_list("1002B"))
+
 
 if __name__ == "__main__":
-    main()
+    test2()

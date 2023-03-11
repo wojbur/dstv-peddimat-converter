@@ -186,7 +186,7 @@ class Hole:
         return y_distance
 
 def main():
-    steel_part = SteelPart("1011B.nc1")
+    steel_part = SteelPart("1004B.nc1")
     for hole in steel_part.holes:
         print(hole)
 
