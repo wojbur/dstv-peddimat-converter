@@ -48,9 +48,12 @@
 
 import sys
 from PyQt6.QtWidgets import (
-    QStyle, QApplication, QMainWindow, QToolBar, QGridLayout, QFileDialog, QWidget, QListWidget, QTableWidget, QTableWidgetItem, QHeaderView
+    QStyle, QApplication, QMainWindow, QToolBar, QGridLayout, QFileDialog, QWidget,
+    QListWidget, QTableWidget, QTableWidgetItem, QHeaderView, QGraphicsScene, QGraphicsView,
+    QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsLineItem
 )
-from PyQt6.QtGui import QAction, QIcon
+from PyQt6.QtGui import QAction, QIcon, QBrush, QPen
+from PyQt6.QtCore import Qt
 
 from db_controller import DatabaseConnection, PartDatabase, HoleDatabase
 from dstv_decoder import SteelPart
@@ -88,9 +91,23 @@ class MainWindow(QMainWindow):
 
         self.create_hole_info_table()
 
+        self.solid_pen = QPen(Qt.GlobalColor.white)
+        self.solid_pen.setStyle(Qt.PenStyle.SolidLine)
+        self.solid_pen.setWidth(1)
+
+        self.dashed_pen = QPen(Qt.GlobalColor.white)
+        self.dashed_pen.setStyle(Qt.PenStyle.DashLine)
+        self.dashed_pen.setWidth(1)
+
+        self.create_part_views()
+
+
         layout = QGridLayout()
-        layout.addWidget(self.part_list_widget, 0, 0)
-        layout.addWidget(self.hole_info_table, 0, 1)
+        layout.addWidget(self.part_list_widget, 0, 0, 0, 1)
+        layout.addWidget(self.hole_info_table, 0, 1, 0, 1)
+        layout.addWidget(self.top_view, 0, 2)
+        layout.addWidget(self.front_view, 1, 2)
+        layout.addWidget(self.bottom_view, 2, 2)
 
         widget = QWidget()
         widget.setLayout(layout)
@@ -105,6 +122,7 @@ class MainWindow(QMainWindow):
         if index:
             partmark = index.text()
             self.populate_hole_info_table(partmark)
+            self.draw_part(partmark)
             print(partmark)
     
     def remove_list_item(self):
@@ -136,6 +154,73 @@ class MainWindow(QMainWindow):
                 self.hole_info_table.setItem(row_position, 1, QTableWidgetItem(hole[1]))
                 self.hole_info_table.setItem(row_position, 2, QTableWidgetItem(str(hole[2])))
                 self.hole_info_table.setItem(row_position, 3, QTableWidgetItem(str(hole[3])))
+    
+    def create_part_views(self):
+        self.top_scene = QGraphicsScene(0, 0, 1100, 300)
+        self.front_scene = QGraphicsScene(0, 0, 1100, 300)
+        self.bottom_scene = QGraphicsScene(0, 0, 1100, 300)
+
+        self.top_view = QGraphicsView(self.top_scene)
+        self.front_view = QGraphicsView(self.front_scene)
+        self.bottom_view = QGraphicsView(self.bottom_scene)
+
+        self.views = (self.top_view, self.front_view, self.bottom_view)
+        self.scenes = (self.top_scene, self.front_scene, self.bottom_scene)
+
+        for view in self.views:
+            view.setMinimumSize(1110, 320)
+
+        for scene in self.scenes:
+            scene.setBackgroundBrush(Qt.GlobalColor.black)
+
+    
+    def draw_part(self, partmark):
+        part_geometry = self.part_database.get_part_geometry(partmark)
+        scale = 200/part_geometry["profile_depth"]
+
+        scene_width = 100 + part_geometry["length"]*scale
+        for scene in self.scenes:
+            scene.setSceneRect(0, 0, scene_width, scene.height())
+
+        self.draw_part_top(scale, part_geometry)
+        self.draw_part_front(scale, part_geometry)
+        self.draw_part_bottom(scale, part_geometry)
+    
+    def draw_part_top(self, scale, part_geometry):
+        self.top_scene.clear()
+
+        height = part_geometry["flange_height"]*scale
+        length = part_geometry["length"]*scale
+        outline = QGraphicsRectItem(0, 0, length, height)
+        outline.setPos(50, 50)
+        outline.setPen(self.solid_pen)
+        self.top_scene.addItem(outline)
+
+    def draw_part_front(self, scale, part_geometry):
+        self.front_scene.clear()
+
+        depth = part_geometry["profile_depth"]*scale
+        length = part_geometry["length"]*scale
+
+        outline = QGraphicsRectItem(0, 0, length, depth)
+        outline.setPos(50, 50)
+        outline.setPen(self.solid_pen)
+        self.front_scene.addItem(outline)
+
+        flange_thickness = part_geometry["flange_thickness"]*scale
+        top_flange_y = 50 + flange_thickness
+        bottom_flange_y = 50 + depth - flange_thickness
+        top_flange = QGraphicsLineItem(50, top_flange_y, 50+length, top_flange_y)
+        bottom_flange = QGraphicsLineItem(50, bottom_flange_y, 50+length, bottom_flange_y)
+        top_flange.setPen(self.solid_pen)
+        bottom_flange.setPen(self.solid_pen)
+        self.front_scene.addItem(top_flange)
+        self.front_scene.addItem(bottom_flange)
+
+
+
+    def draw_part_bottom(self, scale, part_geometry):
+        pass
     
     def save_to_database(self, filepaths):
         self.database_connection.delete_old()

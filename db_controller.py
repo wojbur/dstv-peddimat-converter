@@ -87,6 +87,24 @@ class PartDatabase:
         result = cursor.execute("SELECT partmark FROM part")
         return [item[0] for item in result]
 
+    def get_part_geometry(self, partmark):
+        connection = self.database_connection.connect()
+        connection.row_factory = sqlite3.Row
+        cursor = connection.cursor()
+
+        query = """SELECT
+        profile_type,
+        profile_depth,
+        web_thickness,
+        flange_height,
+        flange_thickness,
+        length
+        FROM part WHERE partmark = ?"""
+
+        cursor.execute(query, (partmark,))
+        result = cursor.fetchone()
+        return dict(result)
+
 
 class HoleDatabase:
     def __init__(self, database_connection):
@@ -208,6 +226,11 @@ def test2():
     hole_database = HoleDatabase(database_connection)
     print(hole_database.get_hole_info_list("1002B"))
 
+def test3():
+    database_connection = DatabaseConnection()
+    part_database = PartDatabase(database_connection)
+    print(part_database.get_part_geometry("1002B"))
+
 
 if __name__ == "__main__":
-    test2()
+    test3()
