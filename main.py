@@ -52,7 +52,7 @@ from PyQt6.QtWidgets import (
     QListWidget, QTableWidget, QTableWidgetItem, QHeaderView, QGraphicsScene, QGraphicsView,
     QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsLineItem
 )
-from PyQt6.QtGui import QAction, QIcon, QBrush, QPen
+from PyQt6.QtGui import QAction, QIcon, QBrush, QPen, QGuiApplication
 from PyQt6.QtCore import Qt
 
 from db_controller import DatabaseConnection, PartDatabase, HoleDatabase
@@ -63,7 +63,6 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("DSTV-Peddimat Converter")
-        self.show()
 
         self.database_connection = DatabaseConnection()
 
@@ -113,6 +112,8 @@ class MainWindow(QMainWindow):
         widget.setLayout(layout)
         self.setCentralWidget(widget)
 
+        self.showMaximized()
+    
     def populate_part_list_widget(self):
         self.part_list_widget.clear()
         partmarks = self.part_database.get_partmarks_list()
@@ -168,59 +169,159 @@ class MainWindow(QMainWindow):
         self.scenes = (self.top_scene, self.front_scene, self.bottom_scene)
 
         for view in self.views:
-            view.setMinimumSize(1110, 320)
+            view.setMinimumSize(800, 200)
 
         for scene in self.scenes:
             scene.setBackgroundBrush(Qt.GlobalColor.black)
 
     
-    def draw_part(self, partmark):
+    def draw_part(self, partmark, scale=None):
         part_geometry = self.part_database.get_part_geometry(partmark)
-        scale = 200/part_geometry["profile_depth"]
+        if not scale:
+            scale = 200/part_geometry["profile_depth"]
 
         scene_width = 100 + part_geometry["length"]*scale
         for scene in self.scenes:
             scene.setSceneRect(0, 0, scene_width, scene.height())
 
-        self.draw_part_top(scale, part_geometry)
-        self.draw_part_front(scale, part_geometry)
-        self.draw_part_bottom(scale, part_geometry)
+        self.draw_part_top(partmark, scale, part_geometry)
+        self.draw_part_front(partmark, scale, part_geometry)
+        self.draw_part_bottom(partmark, scale, part_geometry)
     
-    def draw_part_top(self, scale, part_geometry):
+    def draw_part_top(self, partmark, scale, part_geometry):
         self.top_scene.clear()
 
         height = part_geometry["flange_height"]*scale
         length = part_geometry["length"]*scale
         outline = QGraphicsRectItem(0, 0, length, height)
-        outline.setPos(50, 50)
+
+        x_offset = 50
+        y_offset = 50
+
+        outline.setPos(x_offset, y_offset)
         outline.setPen(self.solid_pen)
         self.top_scene.addItem(outline)
 
-    def draw_part_front(self, scale, part_geometry):
+        print(outline.pos())
+        print(x_offset, y_offset)
+
+        self.draw_holes_top(partmark, scale, x_offset, y_offset)
+
+        web_thickness = part_geometry["web_thickness"]*scale
+
+        if part_geometry["profile_type"] == "B":
+            top_web_y = y_offset + height/2 - web_thickness/2
+            bottom_web_y = y_offset + height/2 + web_thickness/2
+            top_web = QGraphicsLineItem(x_offset, top_web_y, x_offset+length, top_web_y)
+            bottom_web = QGraphicsLineItem(x_offset, bottom_web_y, x_offset+length, bottom_web_y)
+            top_web.setPen(self.dashed_pen)
+            bottom_web.setPen(self.dashed_pen)
+            self.top_scene.addItem(top_web)
+            self.top_scene.addItem(bottom_web)
+        
+        if part_geometry["profile_type"] == "C":
+            web_y = y_offset + web_thickness
+            web = QGraphicsLineItem(x_offset, web_y, x_offset+length, web_y)
+            web.setPen(self.dashed_pen)
+            self.top_scene.addItem(web)
+
+    def draw_part_front(self, partmark, scale, part_geometry):
         self.front_scene.clear()
 
         depth = part_geometry["profile_depth"]*scale
         length = part_geometry["length"]*scale
 
+        x_offset = 50
+        y_offset = 50
+
+        self.draw_holes_front(partmark, scale, x_offset, y_offset)
+
         outline = QGraphicsRectItem(0, 0, length, depth)
-        outline.setPos(50, 50)
+        outline.setPos(x_offset, y_offset)
         outline.setPen(self.solid_pen)
         self.front_scene.addItem(outline)
 
         flange_thickness = part_geometry["flange_thickness"]*scale
-        top_flange_y = 50 + flange_thickness
-        bottom_flange_y = 50 + depth - flange_thickness
-        top_flange = QGraphicsLineItem(50, top_flange_y, 50+length, top_flange_y)
-        bottom_flange = QGraphicsLineItem(50, bottom_flange_y, 50+length, bottom_flange_y)
-        top_flange.setPen(self.solid_pen)
-        bottom_flange.setPen(self.solid_pen)
-        self.front_scene.addItem(top_flange)
-        self.front_scene.addItem(bottom_flange)
+        top_flange_y = y_offset + flange_thickness
+        bottom_flange_y = y_offset + depth - flange_thickness
+        top_flange = QGraphicsLineItem(x_offset, top_flange_y, x_offset+length, top_flange_y)
+        bottom_flange = QGraphicsLineItem(x_offset, bottom_flange_y, x_offset+length, bottom_flange_y)
 
+        if part_geometry["profile_type"] == "B" or part_geometry["profile_type"] == "C":
+            top_flange.setPen(self.solid_pen)
+            bottom_flange.setPen(self.solid_pen)
+            self.front_scene.addItem(top_flange)
+            self.front_scene.addItem(bottom_flange)
 
+        elif part_geometry["profile_type"] == "T":
+            top_flange.setPen(self.dashed_pen)
+            self.front_scene.addItem(top_flange)
+            self.front_scene.addItem(bottom_flange)
+        else:
+            self.front_scene.clear()
+            
+        
+    def draw_part_bottom(self, partmark, scale, part_geometry):
+        self.bottom_scene.clear()
 
-    def draw_part_bottom(self, scale, part_geometry):
-        pass
+        height = part_geometry["flange_height"]*scale
+        length = part_geometry["length"]*scale
+        outline = QGraphicsRectItem(0, 0, length, height)
+
+        x_offset = 50
+        y_offset = (self.top_scene.height() - height)/2
+
+        outline.setPos(x_offset, y_offset)
+        outline.setPen(self.solid_pen)
+        self.bottom_scene.addItem(outline)
+
+        web_thickness = part_geometry["web_thickness"]*scale
+
+        if part_geometry["profile_type"] == "B":
+            top_web_y = y_offset + height/2 - web_thickness/2
+            bottom_web_y = y_offset + height/2 + web_thickness/2
+            top_web = QGraphicsLineItem(x_offset, top_web_y, x_offset+length, top_web_y)
+            bottom_web = QGraphicsLineItem(x_offset, bottom_web_y, x_offset+length, bottom_web_y)
+            top_web.setPen(self.dashed_pen)
+            bottom_web.setPen(self.dashed_pen)
+            self.bottom_scene.addItem(top_web)
+            self.bottom_scene.addItem(bottom_web)
+        
+        if part_geometry["profile_type"] == "C":
+            web_y = y_offset + height - web_thickness
+            web = QGraphicsLineItem(x_offset, web_y, x_offset+length, web_y)
+            web.setPen(self.dashed_pen)
+            self.bottom_scene.addItem(web)
+
+    def draw_holes_top(self, partmark, scale, x_offset, y_offset):
+        hole_geometry_list = self.hole_database.get_hole_geometry_list(partmark, "top")
+        if hole_geometry_list:
+            for hole_geometry in hole_geometry_list:
+                x_diameter = (hole_geometry[0]+hole_geometry[1])*scale
+                y_diameter = (hole_geometry[0]+hole_geometry[2])*scale
+
+                
+                x_distance = hole_geometry[3]*scale/100 + x_offset
+                y_distance = hole_geometry[4]*scale/100 + y_offset
+
+                print(x_distance, y_distance)
+
+                hole = QGraphicsEllipseItem(x_distance, y_distance, x_diameter, y_diameter)
+                hole.setPen(self.solid_pen)
+                self.top_scene.addItem(hole)
+
+    def draw_holes_front(self, partmark, scale, x_offset, y_offset):
+        hole_geometry_list = self.hole_database.get_hole_geometry_list(partmark, "front")
+        if hole_geometry_list:
+            for hole_geometry in hole_geometry_list:
+                x_diameter = (hole_geometry[0]+hole_geometry[1])*scale
+                y_diameter = (hole_geometry[0]+hole_geometry[2])*scale
+                x_distance = hole_geometry[3]*scale/100 + x_offset
+                y_distance = hole_geometry[4]*scale/100 + y_offset
+
+                hole = QGraphicsEllipseItem(x_distance, y_distance, x_diameter, y_diameter)
+                hole.setPen(self.solid_pen)
+                self.front_scene.addItem(hole)
     
     def save_to_database(self, filepaths):
         self.database_connection.delete_old()

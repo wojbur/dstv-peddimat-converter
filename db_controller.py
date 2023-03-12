@@ -195,6 +195,22 @@ class HoleDatabase:
         FROM hole WHERE PartId = ?"""     
         cursor.execute(query, (part_id, ))
         return cursor.fetchall()
+    
+    def get_hole_geometry_list(self, partmark, surface):
+        connection = self.database_connection.connect()
+        cursor = connection.cursor()
+        part_id = self.get_part_id(partmark=partmark)
+
+        query = """SELECT
+        diameter,
+        slot_x,
+        slot_y,
+        x_distance,
+        y_distance
+        FROM hole WHERE PartId = ? AND surface = ?"""     
+        cursor.execute(query, (part_id, surface))
+        return cursor.fetchall()
+
 
 
 
