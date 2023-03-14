@@ -179,11 +179,27 @@ class Hole:
     
     def get_y_distance(self) -> int:
         distance_string = self.hole_line[2]
+
+        if "g" in distance_string:
+            self.type = "r_thrd"
+            distance_string = distance_string[:-1]
+        elif "l" in distance_string:
+            self.type = "l_thrd"
+            distance_string = distance_string[:-1]
+        elif "m" in distance_string:
+            self.type = "mark"
+            distance_string = distance_string[:-1]
+            self.diameter = 0
+            self.size = "0"
+        else:
+            self.type = "std"
+            
         if self.surface == "front":
             y_distance = self.part.profile_depth*100 - float(distance_string)*1000
         else:
             y_distance = float(distance_string)*1000
         return y_distance
+
 
 def main():
     steel_part = SteelPart("1004B.nc1")

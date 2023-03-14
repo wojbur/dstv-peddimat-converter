@@ -93,6 +93,7 @@ class PartDatabase:
         cursor = connection.cursor()
 
         query = """SELECT
+        profile,
         profile_type,
         profile_depth,
         web_thickness,

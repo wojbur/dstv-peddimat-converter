@@ -1,15 +1,18 @@
 import sys
 import os
+import subprocess
+
 from PyQt6.QtWidgets import (
-    QStyle, QApplication, QMainWindow, QToolBar, QSlider, QGridLayout, QFileDialog, QWidget,
+    QStyle, QApplication, QMainWindow, QToolBar, QStatusBar, QSlider, QGridLayout, QVBoxLayout, QFileDialog, QWidget,
     QListWidget, QTableWidget, QTableWidgetItem, QHeaderView, QGraphicsScene, QGraphicsView,
     QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsLineItem, QLabel, QSizePolicy
 )
 from PyQt6.QtGui import QAction, QIcon, QPen
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QModelIndex
 
 from db_controller import DatabaseConnection, PartDatabase, HoleDatabase
 from dstv_decoder import SteelPart
+from peddimat_encoder import PeddimatEncoder
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -37,11 +40,6 @@ class MainWindow(QMainWindow):
         remove_list_item_action.triggered.connect(self.remove_list_item)
         toolbar.addAction(remove_list_item_action)
 
-        test_icon = QIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogHelpButton))
-        test_action = QAction(test_icon, "&Remove selected", self)
-        test_action.triggered.connect(self.test)
-        toolbar.addAction(test_action)
-
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         toolbar.addWidget(spacer)
@@ -58,8 +56,10 @@ class MainWindow(QMainWindow):
 
         self.part_list_widget = QListWidget()
         self.part_list_widget.setFixedWidth(150)
+        self.part_list_widget.setAlternatingRowColors(True)
         self.part_list_widget.currentItemChanged.connect(self.part_list_index_changed)
 
+        self.create_part_info_table()
         self.create_hole_info_table()
 
         self.solid_pen = QPen(Qt.GlobalColor.white)
@@ -72,9 +72,13 @@ class MainWindow(QMainWindow):
 
         self.create_part_views()
 
+        table_layout = QVBoxLayout()
+        table_layout.addWidget(self.part_info_table)
+        table_layout.addWidget(self.hole_info_table)
+
         layout = QGridLayout()
         layout.addWidget(self.part_list_widget, 0, 0, 0, 1)
-        layout.addWidget(self.hole_info_table, 0, 1, 0, 1)
+        layout.addLayout(table_layout, 0, 1, 0, 1)
         layout.addWidget(self.top_view, 0, 2)
         layout.addWidget(self.front_view, 1, 2)
         layout.addWidget(self.bottom_view, 2, 2)
@@ -84,10 +88,6 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(widget)
 
         self.showMaximized()
-    
-    def test(self):
-        for item in self.top_scene.items():
-            item.moveBy(50, 50)
     
     def scale_slider_changed(self, value):
         print(value)
@@ -104,9 +104,9 @@ class MainWindow(QMainWindow):
     def part_list_index_changed(self, index):
         if index:
             partmark = index.text()
+            self.populate_part_info_table(partmark)
             self.populate_hole_info_table(partmark)
             self.draw_part(partmark)
-            print(partmark)
     
     def remove_list_item(self):
         current_item = self.part_list_widget.currentItem()
@@ -115,8 +115,34 @@ class MainWindow(QMainWindow):
             self.hole_database.remove_data(partmark)
             self.part_database.remove_data(partmark)
             self.part_list_widget.takeItem(self.part_list_widget.row(current_item))
-        else:
+
+        current_item = self.part_list_widget.currentItem()
+        if not current_item:
             self.clear_scenes()
+            self.hole_info_table.setRowCount(0)
+            self.part_info_table.setRowCount(0)
+    
+    def create_part_info_table(self):
+        self.part_info_table = QTableWidget(0, 4)
+        self.part_info_table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
+        self.part_info_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.part_info_table.setFixedWidth(350)
+        self.part_info_table.setFixedHeight(50)
+        labels = ["Profile", "Len[mm*10]", "Hgt[mm*10]", "Wdt[mm*10]"]
+        self.part_info_table.setHorizontalHeaderLabels(labels)
+        for i, label in enumerate(labels):
+            self.part_info_table.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeMode.Stretch)
+    
+    def populate_part_info_table(self, partmark):
+        self.part_info_table.setRowCount(0)
+
+        part_geometry = self.part_database.get_part_geometry(partmark)
+        if part_geometry:
+            self.part_info_table.insertRow(0)
+            self.part_info_table.setItem(0, 0, QTableWidgetItem(part_geometry["profile"]))
+            self.part_info_table.setItem(0, 1, QTableWidgetItem(str(part_geometry["length"])))
+            self.part_info_table.setItem(0, 2, QTableWidgetItem(str(part_geometry["profile_depth"])))
+            self.part_info_table.setItem(0, 3, QTableWidgetItem(str(part_geometry["flange_height"])))
 
     def create_hole_info_table(self):
         self.hole_info_table = QTableWidget(0, 4)
@@ -330,12 +356,30 @@ class MainWindow(QMainWindow):
                 self.hole_database.insert_data(hole)
 
     def import_dstv(self):
-        filepaths = QFileDialog.getOpenFileNames(self, caption="select .nc1 files", filter="*.nc1")[0]
+        dialog = QFileDialog(self)
+        home_path = os.path.expanduser("~")
+        print(home_path)
+        dialog.setDirectory(home_path)
+        filepaths = dialog.getOpenFileNames(self, caption="select .nc1 files", filter="DSTV files (*.nc1)")[0]
         self.save_to_database(filepaths)
         self.populate_part_list_widget()
+        if self.part_list_widget.count():
+            self.part_list_widget.setCurrentItem(self.part_list_widget.item(0))
 
     def export_peddimat(self):
-        print("export peddimat")
+        partmarks = [self.part_list_widget.item(i).text() for i in range(self.part_list_widget.count())]
+
+        if partmarks:
+            output_directory = QFileDialog.getExistingDirectory(self, caption="select output directory")
+            if output_directory:
+                peddimat_encoder = PeddimatEncoder(self.database_connection)
+                for partmark in partmarks:
+                    peddimat_encoder.save_peddimat_file(partmark, output_directory)    
+                os.startfile(output_directory)
+    
+    def closeEvent(self, event):
+        if os.path.exists(self.database_connection.database_file):
+            os.remove(self.database_connection.database_file)
 
 
 def main():
