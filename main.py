@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QListWidget, QTableWidget, QTableWidgetItem, QHeaderView, QGraphicsScene, QGraphicsView,
     QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsLineItem, QLabel, QSizePolicy
 )
-from PyQt6.QtGui import QAction, QIcon, QPen
+from PyQt6.QtGui import QAction, QIcon, QPen, QPixmap
 from PyQt6.QtCore import Qt, QModelIndex
 
 from db_controller import DatabaseConnection, PartDatabase, HoleDatabase
@@ -25,18 +25,19 @@ class MainWindow(QMainWindow):
         toolbar = QToolBar("Import NC1")
         self.addToolBar(toolbar)
 
-        import_icon = QIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon))
+        # import_icon = QIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon))
+        import_icon = QIcon(os.path.join(basedir, "Icons", "dstv_import.png"))
         import_dstv_action = QAction(import_icon, "&import dstv files", self)
         import_dstv_action.triggered.connect(self.import_dstv)
         toolbar.addAction(import_dstv_action)
 
-        export_icon = QIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
+        export_icon = QIcon(os.path.join(basedir, "Icons", "peddimat_export.png"))
         export_peddimat_action = QAction(export_icon, "&export peddimat files", self)
         export_peddimat_action.triggered.connect(self.export_peddimat)
         toolbar.addAction(export_peddimat_action)
 
-        remove_list_item_icon = QIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_TrashIcon))
-        remove_list_item_action = QAction(remove_list_item_icon, "&Remove selected", self)
+        remove_list_item_icon = QIcon(os.path.join(basedir, "Icons", "bin.png"))
+        remove_list_item_action = QAction(remove_list_item_icon, "&remove selected", self)
         remove_list_item_action.triggered.connect(self.remove_list_item)
         toolbar.addAction(remove_list_item_action)
 
@@ -45,14 +46,27 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(spacer)
 
         self.scale = 0.05
-        toolbar.addWidget(QLabel("ZOOM"))
+
         scale_slider = QSlider(Qt.Orientation.Horizontal)
         scale_slider.setValue(50)
         scale_slider.setMinimum(20)
         scale_slider.setMaximum(80)
         scale_slider.setFixedWidth(100)
         scale_slider.valueChanged.connect(self.scale_slider_changed)
+
+        zoom_out_icon = QIcon(os.path.join(basedir, "Icons", "zoom_out.png"))
+        zoom_out_action = QAction(zoom_out_icon, "&zoom out", self)
+        zoom_out_action.triggered.connect(lambda: scale_slider.setValue(scale_slider.value()-1))
+
+        zoom_in_icon = QIcon(os.path.join(basedir, "Icons", "zoom_in.png"))
+        zoom_in_action = QAction(zoom_in_icon, "&zoom in", self)
+        zoom_in_action.triggered.connect(lambda: scale_slider.setValue(scale_slider.value()+1))
+
+        zoom_out_icon = QIcon(os.path.join(basedir, "Icons", "zoom_out.png"))
+
+        toolbar.addAction(zoom_out_action)
         toolbar.addWidget(scale_slider)
+        toolbar.addAction(zoom_in_action)
 
         self.part_list_widget = QListWidget()
         self.part_list_widget.setFixedWidth(150)
@@ -87,10 +101,10 @@ class MainWindow(QMainWindow):
         widget.setLayout(layout)
         self.setCentralWidget(widget)
 
-        self.showMaximized()
+        # self.showMaximized()
+        self.show()
     
     def scale_slider_changed(self, value):
-        print(value)
         self.scale = value/1000
         if self.part_list_widget.currentItem():
             partmark = self.part_list_widget.currentItem().text()
