@@ -6,6 +6,7 @@ class SteelPart:
 
         self.partmark = self.get_partmatk()
         self.profile = self.get_profile()
+        self.valid_profile_type = True
         self.profile_type = self.get_profile_type()
         self.quantity = self.get_quantity()
         self.profile_depth = self.get_profile_depth()
@@ -53,13 +54,15 @@ class SteelPart:
             case "U":
                 profile_type_peddimat = "C"
             case "M":
-                profile_type_peddimat = "T"
-            case "B":
-                profile_type_peddimat = "P"
-            case "L":
-                profile_type_peddimat = "L"
+                profile_type_peddimat = "T"       
+            # B(Plate) and L(Angle) profile functionality to be added later
+            # case "B":
+            #     profile_type_peddimat = "P"
+            # case "L":
+            #     profile_type_peddimat = "L"
             case _:
-                profile_type_peddimat = profile_type_dstv
+                profile_type_peddimat = None
+                self.valid_profile_type = False
         return profile_type_peddimat
     
     def get_quantity(self) -> int:
