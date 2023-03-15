@@ -92,7 +92,11 @@ class SteelPart:
 
     def get_length(self) -> int:
         line = self.dstv_content.splitlines()[10]
-        length = float(line)*10
+        # Depending on DSTV export settings the line can contain single value or two values separated by comma
+        try:
+            length = float(line)*10
+        except ValueError:
+            length=float(line.split(",")[0])*10
         return length
     
     def get_holes(self) -> list:
