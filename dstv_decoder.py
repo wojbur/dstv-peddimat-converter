@@ -53,8 +53,8 @@ class SteelPart:
                 profile_type_peddimat = "B"
             case "U":
                 profile_type_peddimat = "C"
-            case "M":
-                profile_type_peddimat = "T"       
+            # case "M":
+            #     profile_type_peddimat = "T"       
             # B(Plate) and L(Angle) profile functionality to be added later
             # case "B":
             #     profile_type_peddimat = "P"
@@ -105,7 +105,10 @@ class SteelPart:
         return holes
 
     def get_holes_lines(self) -> list:
-        BO_block_content = re.findall(r"(?<=BO\n)(.*)(?=EN)", self.dstv_content, re.DOTALL)[0]
+        try:
+            BO_block_content = re.findall(r"(?<=BO\n)(.*)(?=EN)", self.dstv_content, re.DOTALL)[0]
+        except IndexError:
+            return []
         holes_lines = re.findall(r"  [ovu].+", BO_block_content)
         return holes_lines
 

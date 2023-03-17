@@ -19,24 +19,24 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("DSTV-Peddimat Converter")
 
-        basedir = os.path.dirname(__file__)
-        self.database_connection = DatabaseConnection(os.path.join(basedir, "current_session.db"))
+        self.basedir = os.path.dirname(__file__)
+        self.database_connection = DatabaseConnection(os.path.join(self.basedir, "current_session.db"))
 
         toolbar = QToolBar("Import NC1")
         self.addToolBar(toolbar)
 
         # import_icon = QIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon))
-        import_icon = QIcon(os.path.join(basedir, "Icons", "dstv_import.png"))
+        import_icon = QIcon(os.path.join(self.basedir, "Icons", "dstv_import.png"))
         import_dstv_action = QAction(import_icon, "&import dstv files", self)
         import_dstv_action.triggered.connect(self.import_dstv)
         toolbar.addAction(import_dstv_action)
 
-        export_icon = QIcon(os.path.join(basedir, "Icons", "peddimat_export.png"))
+        export_icon = QIcon(os.path.join(self.basedir, "Icons", "peddimat_export.png"))
         export_peddimat_action = QAction(export_icon, "&export peddimat files", self)
         export_peddimat_action.triggered.connect(self.export_peddimat)
         toolbar.addAction(export_peddimat_action)
 
-        remove_list_item_icon = QIcon(os.path.join(basedir, "Icons", "bin.png"))
+        remove_list_item_icon = QIcon(os.path.join(self.basedir, "Icons", "bin.png"))
         remove_list_item_action = QAction(remove_list_item_icon, "&remove selected", self)
         remove_list_item_action.triggered.connect(self.remove_list_item)
         toolbar.addAction(remove_list_item_action)
@@ -54,15 +54,15 @@ class MainWindow(QMainWindow):
         scale_slider.setFixedWidth(100)
         scale_slider.valueChanged.connect(self.scale_slider_changed)
 
-        zoom_out_icon = QIcon(os.path.join(basedir, "Icons", "zoom_out.png"))
+        zoom_out_icon = QIcon(os.path.join(self.basedir, "Icons", "zoom_out.png"))
         zoom_out_action = QAction(zoom_out_icon, "&zoom out", self)
         zoom_out_action.triggered.connect(lambda: scale_slider.setValue(scale_slider.value()-1))
 
-        zoom_in_icon = QIcon(os.path.join(basedir, "Icons", "zoom_in.png"))
+        zoom_in_icon = QIcon(os.path.join(self.basedir, "Icons", "zoom_in.png"))
         zoom_in_action = QAction(zoom_in_icon, "&zoom in", self)
         zoom_in_action.triggered.connect(lambda: scale_slider.setValue(scale_slider.value()+1))
 
-        zoom_out_icon = QIcon(os.path.join(basedir, "Icons", "zoom_out.png"))
+        zoom_out_icon = QIcon(os.path.join(self.basedir, "Icons", "zoom_out.png"))
 
         toolbar.addAction(zoom_out_action)
         toolbar.addWidget(scale_slider)
@@ -365,20 +365,35 @@ class MainWindow(QMainWindow):
 
         for filepath in filepaths:
             steel_part = SteelPart(filepath)
-            self.part_database.insert_data(steel_part)
-            for hole in steel_part.holes:
-                self.hole_database.insert_data(hole)
+            if steel_part.valid_profile_type:
+                self.part_database.insert_data(steel_part)
+                for hole in steel_part.holes:
+                    self.hole_database.insert_data(hole)
 
     def import_dstv(self):
         dialog = QFileDialog(self)
-        home_path = os.path.expanduser("~")
-        print(home_path)
-        dialog.setDirectory(home_path)
+        openfile_dir = self.get_openfile_directory()
+        dialog.setDirectory(openfile_dir)
         filepaths = dialog.getOpenFileNames(self, caption="select .nc1 files", filter="DSTV files (*.nc1)")[0]
-        self.save_to_database(filepaths)
-        self.populate_part_list_widget()
-        if self.part_list_widget.count():
-            self.part_list_widget.setCurrentItem(self.part_list_widget.item(0))
+        if filepaths:
+            self.save_to_database(filepaths)
+            self.save_openfile_directory(filepaths[0])
+            self.populate_part_list_widget()
+            if self.part_list_widget.count():
+                self.part_list_widget.setCurrentItem(self.part_list_widget.item(0))
+        
+    def get_openfile_directory(self):
+        if os.path.exists(os.path.join(self.basedir, "lastdir.txt")):
+            with open(os.path.join(self.basedir, "lastdir.txt"), "r") as f:
+                last_dir = f.read()
+                if os.path.exists(last_dir):
+                    return last_dir
+        return os.path.expanduser("~")
+    
+    def save_openfile_directory(self, filepath):
+        openfile_fir = os.path.dirname(filepath)
+        with open(os.path.join(self.basedir, "lastdir.txt"), "w") as f:
+            f.write(openfile_fir)
 
     def export_peddimat(self):
         partmarks = [self.part_list_widget.item(i).text() for i in range(self.part_list_widget.count())]

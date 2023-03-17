@@ -42,37 +42,36 @@ class PartDatabase:
         connection.close()
     
     def insert_data(self, part):
-        if part.valid_profile_type:
-            connection = self.database_connection.connect()
-            cursor = connection.cursor()
+        connection = self.database_connection.connect()
+        cursor = connection.cursor()
 
-            query = """INSERT INTO part (
-            partmark,
-            profile,
-            profile_type,
-            quantity,
-            profile_depth,
-            web_thickness,
-            flange_height,
-            flange_thickness,
-            length
-            )
-            VALUES (?,?,?,?,?,?,?,?,?);"""
+        query = """INSERT INTO part (
+        partmark,
+        profile,
+        profile_type,
+        quantity,
+        profile_depth,
+        web_thickness,
+        flange_height,
+        flange_thickness,
+        length
+        )
+        VALUES (?,?,?,?,?,?,?,?,?);"""
 
-            cursor.execute(query, (
-                part.partmark,
-                part.profile,
-                part.profile_type,
-                part.quantity,
-                round(part.profile_depth),
-                round(part.web_thickness),
-                round(part.flange_height),
-                round(part.flange_thickness),
-                round(part.length)
-                ))
-            connection.commit()
-            cursor.close()
-            connection.close()
+        cursor.execute(query, (
+            part.partmark,
+            part.profile,
+            part.profile_type,
+            part.quantity,
+            round(part.profile_depth),
+            round(part.web_thickness),
+            round(part.flange_height),
+            round(part.flange_thickness),
+            round(part.length)
+            ))
+        connection.commit()
+        cursor.close()
+        connection.close()
     
     def remove_data(self, partmark):
         connection = self.database_connection.connect()
