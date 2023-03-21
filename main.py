@@ -359,11 +359,21 @@ class MainWindow(QMainWindow):
             self.bottom_scene.addItem(top_web)
             self.bottom_scene.addItem(bottom_web)
         
-        if part_geometry["profile_type"] == "C":
+        elif part_geometry["profile_type"] == "C":
             web_y = height - web_thickness
             web = QGraphicsLineItem(0, web_y, length, web_y)
             web.setPen(self.dashed_pen)
             self.bottom_scene.addItem(web)
+        
+        elif part_geometry["profile_type"] == "T":
+            top_web_y = web_thickness
+            bottom_web_y = height - web_thickness
+            top_web = QGraphicsLineItem(0, top_web_y, length, top_web_y)
+            bottom_web = QGraphicsLineItem(0, bottom_web_y, length, bottom_web_y)
+            top_web.setPen(self.dashed_pen)
+            bottom_web.setPen(self.dashed_pen)
+            self.bottom_scene.addItem(top_web)
+            self.bottom_scene.addItem(bottom_web)
 
     def draw_holes_top(self, partmark):
         hole_geometry_list = self.hole_database.get_hole_geometry_list(partmark, "top")
