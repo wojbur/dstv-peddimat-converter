@@ -53,8 +53,10 @@ class SteelPart:
                 profile_type_peddimat = "B"
             case "U":
                 profile_type_peddimat = "C"
-            # case "M":
-            #     profile_type_peddimat = "T"       
+            case "M":
+                profile_type_peddimat = "T"
+            case "T":
+                profile_type_peddimat = "t"
             # B(Plate) and L(Angle) profile functionality to be added later
             # case "B":
             #     profile_type_peddimat = "P"

@@ -4,7 +4,7 @@ import subprocess
 
 from PyQt6.QtWidgets import (
     QStyle, QApplication, QMainWindow, QToolBar, QStatusBar, QSlider, QGridLayout, QVBoxLayout, QFileDialog, QWidget,
-    QListWidget, QTableWidget, QTableWidgetItem, QHeaderView, QGraphicsScene, QGraphicsView,
+    QCheckBox, QListWidget, QTableWidget, QTableWidgetItem, QHeaderView, QGraphicsScene, QGraphicsView,
     QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsLineItem, QLabel, QSizePolicy
 )
 from PyQt6.QtGui import QAction, QIcon, QPen, QPixmap
@@ -40,6 +40,32 @@ class MainWindow(QMainWindow):
         remove_list_item_action = QAction(remove_list_item_icon, "&remove selected", self)
         remove_list_item_action.triggered.connect(self.remove_list_item)
         toolbar.addAction(remove_list_item_action)
+
+        toolbar.addSeparator()
+
+        self.valid_profile_types = ["B", "C", "T", "t"]
+
+        self.B_checkbox = QCheckBox(self)
+        self.B_checkbox.setIcon(QIcon(os.path.join(self.basedir, "Icons", "profile_wf.png")))
+        self.B_checkbox.setChecked(True)
+        self.B_checkbox.stateChanged.connect(lambda checked: self.profile_checkbox_changed(checked, "B"))
+        toolbar.addWidget(self.B_checkbox)
+        self.C_checkbox = QCheckBox(self)
+        self.C_checkbox.setIcon(QIcon(os.path.join(self.basedir, "Icons", "profile_c.png")))
+        self.C_checkbox.setChecked(True)
+        self.C_checkbox.stateChanged.connect(lambda checked: self.profile_checkbox_changed(checked, "C"))
+        toolbar.addWidget(self.C_checkbox)
+        self.T_checkbox = QCheckBox(self)
+        self.T_checkbox.setIcon(QIcon(os.path.join(self.basedir, "Icons", "profile_tube.png")))
+        self.T_checkbox.setChecked(True)
+        self.T_checkbox.stateChanged.connect(lambda checked: self.profile_checkbox_changed(checked, "T"))
+        toolbar.addWidget(self.T_checkbox)
+        self.tee_checkbox = QCheckBox(self)
+        self.tee_checkbox.setIcon(QIcon(os.path.join(self.basedir, "Icons", "profile_t.png")))
+        self.tee_checkbox.setChecked(True)
+        self.tee_checkbox.stateChanged.connect(lambda checked: self.profile_checkbox_changed(checked, "t"))
+        toolbar.addWidget(self.tee_checkbox)
+
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
@@ -103,6 +129,13 @@ class MainWindow(QMainWindow):
 
         # self.showMaximized()
         self.show()
+    
+    def profile_checkbox_changed(self, checked, profile_type):
+        if checked:
+            self.valid_profile_types.append(profile_type)
+        else:
+            self.valid_profile_types.remove(profile_type)
+        print(self.valid_profile_types)
     
     def scale_slider_changed(self, value):
         self.scale = value/1000
@@ -365,7 +398,7 @@ class MainWindow(QMainWindow):
 
         for filepath in filepaths:
             steel_part = SteelPart(filepath)
-            if steel_part.valid_profile_type:
+            if steel_part.profile_type in self.valid_profile_types:
                 self.part_database.insert_data(steel_part)
                 for hole in steel_part.holes:
                     self.hole_database.insert_data(hole)
