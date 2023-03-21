@@ -66,6 +66,14 @@ class MainWindow(QMainWindow):
         self.tee_checkbox.stateChanged.connect(lambda checked: self.profile_checkbox_changed(checked, "t"))
         toolbar.addWidget(self.tee_checkbox)
 
+        toolbar.addSeparator()
+
+        # self.ignore_parts_without_holes = False
+        # self.ignore_parts_without_holes_checkbox = QCheckBox("ignore parts without holes", self)
+        # self.ignore_parts_without_holes_checkbox.setChecked(False)
+        # toolbar.addWidget(self.ignore_parts_without_holes_checkbox)
+
+
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
@@ -279,11 +287,21 @@ class MainWindow(QMainWindow):
             self.top_scene.addItem(top_web)
             self.top_scene.addItem(bottom_web)
         
-        if part_geometry["profile_type"] == "C":
+        elif part_geometry["profile_type"] == "C":
             web_y = web_thickness
             web = QGraphicsLineItem(0, web_y, length, web_y)
             web.setPen(self.dashed_pen)
             self.top_scene.addItem(web)
+        
+        elif part_geometry["profile_type"] == "T":
+            top_web_y = web_thickness
+            bottom_web_y = height - web_thickness
+            top_web = QGraphicsLineItem(0, top_web_y, length, top_web_y)
+            bottom_web = QGraphicsLineItem(0, bottom_web_y, length, bottom_web_y)
+            top_web.setPen(self.dashed_pen)
+            bottom_web.setPen(self.dashed_pen)
+            self.top_scene.addItem(top_web)
+            self.top_scene.addItem(bottom_web)
 
     def draw_part_front(self, partmark, part_geometry):
         depth = part_geometry["profile_depth"]*self.scale
@@ -308,11 +326,14 @@ class MainWindow(QMainWindow):
             self.front_scene.addItem(bottom_flange)
 
         elif part_geometry["profile_type"] == "T":
-            top_flange.setPen(self.dashed_pen)
-            self.front_scene.addItem(top_flange)
-            self.front_scene.addItem(bottom_flange)
-        else:
-            self.front_scene.clear()
+            top_flange_y = flange_thickness
+            bottom_flange_y = depth - flange_thickness
+            top_web = QGraphicsLineItem(0, top_flange_y, length, top_flange_y)
+            bottom_web = QGraphicsLineItem(0, bottom_flange_y, length, bottom_flange_y)
+            top_web.setPen(self.dashed_pen)
+            bottom_web.setPen(self.dashed_pen)
+            self.front_scene.addItem(top_web)
+            self.front_scene.addItem(bottom_web)
             
         
     def draw_part_bottom(self, partmark, part_geometry):
