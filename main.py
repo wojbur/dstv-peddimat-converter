@@ -302,6 +302,16 @@ class MainWindow(QMainWindow):
             bottom_web.setPen(self.dashed_pen)
             self.top_scene.addItem(top_web)
             self.top_scene.addItem(bottom_web)
+        
+        elif part_geometry["profile_type"] == "t":
+            top_web_y = height/2 - web_thickness/2
+            bottom_web_y = height/2 + web_thickness/2
+            top_web = QGraphicsLineItem(0, top_web_y, length, top_web_y)
+            bottom_web = QGraphicsLineItem(0, bottom_web_y, length, bottom_web_y)
+            top_web.setPen(self.solid_pen)
+            bottom_web.setPen(self.solid_pen)
+            self.top_scene.addItem(top_web)
+            self.top_scene.addItem(bottom_web)
 
     def draw_part_front(self, partmark, part_geometry):
         depth = part_geometry["profile_depth"]*self.scale
@@ -334,6 +344,11 @@ class MainWindow(QMainWindow):
             bottom_web.setPen(self.dashed_pen)
             self.front_scene.addItem(top_web)
             self.front_scene.addItem(bottom_web)
+        
+        elif part_geometry["profile_type"] == "t":
+            bottom_flange.setPen(self.solid_pen)
+            self.front_scene.addItem(bottom_flange)
+
             
         
     def draw_part_bottom(self, partmark, part_geometry):
@@ -374,6 +389,9 @@ class MainWindow(QMainWindow):
             bottom_web.setPen(self.dashed_pen)
             self.bottom_scene.addItem(top_web)
             self.bottom_scene.addItem(bottom_web)
+        
+        elif part_geometry["profile_type"] == "t":
+            self.bottom_scene.clear()
 
     def draw_holes_top(self, partmark):
         hole_geometry_list = self.hole_database.get_hole_geometry_list(partmark, "top")

@@ -73,7 +73,10 @@ class SteelPart:
         return quantity
     
     def get_profile_depth(self) -> int:
-        line = self.dstv_content.splitlines()[11]
+        if self.profile_type == "t":
+            line = self.dstv_content.splitlines()[12]
+        else:
+            line = self.dstv_content.splitlines()[11]
         depth = float(line)*10
         return depth
     
@@ -83,7 +86,10 @@ class SteelPart:
         return thickness
 
     def get_flange_height(self) -> int:
-        line = self.dstv_content.splitlines()[12]
+        if self.profile_type == "t":
+            line = self.dstv_content.splitlines()[11]
+        else:
+            line = self.dstv_content.splitlines()[12]
         height = float(line)*10
         return height
 
@@ -150,13 +156,20 @@ class Hole:
         return hole_line
     
     def get_surface(self) -> str:
-        match self.hole_line[0]:
-            case "v":
-                return "front"
-            case "o":
-                return "top"
-            case "u":
-                return "bottom"
+        if self.part.profile_type == "t":
+            match self.hole_line[0]:
+                case "v":
+                    return "top"
+                case "o":
+                    return "front"
+        else:
+            match self.hole_line[0]:
+                case "v":
+                    return "front"
+                case "o":
+                    return "top"
+                case "u":
+                    return "bottom"
             
     def get_diameter(self):
         diameter_string = self.hole_line[3]
@@ -205,8 +218,10 @@ class Hole:
             self.size = "0"
         else:
             self.type = "std"
-            
-        if self.surface == "front":
+
+        if self.surface == "front" and self.part.profile_type == "t":
+            y_distance = float(distance_string)*1000
+        elif self.surface == "front":
             y_distance = self.part.profile_depth*100 - float(distance_string)*1000
         else:
             y_distance = float(distance_string)*1000
