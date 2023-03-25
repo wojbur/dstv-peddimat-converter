@@ -191,12 +191,14 @@ class HoleDatabase:
     
     def get_hole_info_list(self, partmark):
         connection = self.database_connection.connect()
+        connection.row_factory = sqlite3.Row
         cursor = connection.cursor()
         part_id = self.get_part_id(partmark=partmark)
 
         query = """SELECT
         surface,
-        size,
+        size_mm,
+        size_inch,
         x_distance,
         y_distance
         FROM hole WHERE PartId = ?"""     

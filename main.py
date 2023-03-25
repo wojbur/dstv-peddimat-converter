@@ -3,7 +3,7 @@ import os
 import subprocess
 
 from PyQt6.QtWidgets import (
-    QStyle, QApplication, QMainWindow, QToolBar, QStatusBar, QSlider, QGridLayout, QVBoxLayout, QFileDialog, QWidget,
+    QStyle, QApplication, QMainWindow, QToolBar, QStatusBar, QSlider, QGridLayout, QVBoxLayout, QHBoxLayout, QFileDialog, QWidget,
     QCheckBox, QComboBox, QListWidget, QTableWidget, QTableWidgetItem, QHeaderView, QGraphicsScene, QGraphicsView,
     QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsLineItem, QLabel, QSizePolicy
 )
@@ -108,6 +108,7 @@ class MainWindow(QMainWindow):
         self.part_list_widget.setAlternatingRowColors(True)
         self.part_list_widget.currentItemChanged.connect(self.part_list_index_changed)
 
+        table_unit_label = QLabel("Table units:")
         self.table_unit_combobox = QComboBox()
         self.table_unit_combobox.addItems(["mm", "inch"])
         self.table_unit_combobox.currentIndexChanged.connect(self.table_unit_combobox_index_changed)
@@ -124,8 +125,12 @@ class MainWindow(QMainWindow):
 
         self.create_part_views()
 
+        unit_layout = QHBoxLayout()
+        unit_layout.addWidget(table_unit_label)
+        unit_layout.addWidget(self.table_unit_combobox)
+
         table_layout = QVBoxLayout()
-        table_layout.addWidget(self.table_unit_combobox)
+        table_layout.addLayout(unit_layout)
         table_layout.addWidget(self.part_info_table)
         table_layout.addWidget(self.hole_info_table)
 
@@ -223,7 +228,7 @@ class MainWindow(QMainWindow):
         self.hole_info_table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
         self.hole_info_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.hole_info_table.setFixedWidth(350)
-        labels = ["Surface", "Size[mm*10]", "X[mm*1000]", "Y[mm*1000]"]
+        labels = ["Surface", "Size", "X distance", "Y distance"]
         self.hole_info_table.setHorizontalHeaderLabels(labels)
         for i, label in enumerate(labels):
             self.hole_info_table.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeMode.Stretch)
@@ -234,12 +239,20 @@ class MainWindow(QMainWindow):
         hole_info_list = self.hole_database.get_hole_info_list(partmark)
         if hole_info_list:
             for hole in hole_info_list:
-                row_position = self.hole_info_table.rowCount()
-                self.hole_info_table.insertRow(self.hole_info_table.rowCount())
-                self.hole_info_table.setItem(row_position, 0, QTableWidgetItem(hole[0]))
-                self.hole_info_table.setItem(row_position, 1, QTableWidgetItem(hole[1]))
-                self.hole_info_table.setItem(row_position, 2, QTableWidgetItem(str(hole[2])))
-                self.hole_info_table.setItem(row_position, 3, QTableWidgetItem(str(hole[3])))
+                if self.table_unit_combobox.currentText() == "mm":
+                    row_position = self.hole_info_table.rowCount()
+                    self.hole_info_table.insertRow(self.hole_info_table.rowCount())
+                    self.hole_info_table.setItem(row_position, 0, QTableWidgetItem(hole["surface"]))
+                    self.hole_info_table.setItem(row_position, 1, QTableWidgetItem(hole["size_mm"]))
+                    self.hole_info_table.setItem(row_position, 2, QTableWidgetItem(str(round(hole["x_distance"]/1000, 1))))
+                    self.hole_info_table.setItem(row_position, 3, QTableWidgetItem(str(round(hole["y_distance"]/1000, 1))))
+                elif self.table_unit_combobox.currentText() == "inch":
+                    row_position = self.hole_info_table.rowCount()
+                    self.hole_info_table.insertRow(self.hole_info_table.rowCount())
+                    self.hole_info_table.setItem(row_position, 0, QTableWidgetItem(hole["surface"]))
+                    self.hole_info_table.setItem(row_position, 1, QTableWidgetItem(hole["size_inch"]))
+                    self.hole_info_table.setItem(row_position, 2, QTableWidgetItem(str(round(hole["x_distance"]/25400, 3))))
+                    self.hole_info_table.setItem(row_position, 3, QTableWidgetItem(str(round(hole["y_distance"]/25400, 3))))
     
     def create_part_views(self):
         self.top_scene = QGraphicsScene(0, 0, 1100, 300)

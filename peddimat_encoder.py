@@ -149,14 +149,7 @@ class PeddimatEncoder:
 
 
 def main():
-    database_connection = DatabaseConnection("database.db")
-    peddimat_encoder = PeddimatEncoder(database_connection)
-
-
-    parts = ["1001B", "1002B", "1003B", "1004B", "1005B", "1006B", "1007B", "1008B", "1009B", "1010B", "1011B"]
-    for part in parts:
-        peddimat_encoder.save_peddimat_file(part, "output_test")
-
+    pass
 
 if __name__ == "__main__":
     main()
