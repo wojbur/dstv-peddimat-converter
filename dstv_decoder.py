@@ -102,7 +102,6 @@ class Hole:
         self.partmark = self.part.partmark
 
         self.get_hole_line_list(hole_line_text)
-
         self.get_surface()
         self.get_diameter()
         self.get_slotted_info()
