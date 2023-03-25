@@ -258,12 +258,16 @@ class MainWindow(QMainWindow):
         self.draw_part_bottom(partmark, part_geometry)
 
         # Offset graphic items from view border
+        top_y_offset = self.top_scene.height()/2 - part_geometry["flange_height"]/2 * self.scale
+        front_y_offset = self.front_scene.height()/2 - part_geometry["profile_depth"]/2 * self.scale
+        bottom_y_offset = self.bottom_scene.height()/2 - part_geometry["flange_height"]/2 * self.scale
+
         for item in self.top_scene.items():
-            item.moveBy(50, 50)
+            item.moveBy(50, top_y_offset)
         for item in self.front_scene.items():
-            item.moveBy(50, 50)
+            item.moveBy(50, front_y_offset)
         for item in self.bottom_scene.items():
-            item.moveBy(50, 50)
+            item.moveBy(50, bottom_y_offset)
     
     def draw_part_top(self, partmark, part_geometry):
         height = part_geometry["flange_height"]*self.scale
