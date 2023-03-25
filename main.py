@@ -4,7 +4,7 @@ import subprocess
 
 from PyQt6.QtWidgets import (
     QStyle, QApplication, QMainWindow, QToolBar, QStatusBar, QSlider, QGridLayout, QVBoxLayout, QFileDialog, QWidget,
-    QCheckBox, QListWidget, QTableWidget, QTableWidgetItem, QHeaderView, QGraphicsScene, QGraphicsView,
+    QCheckBox, QComboBox, QListWidget, QTableWidget, QTableWidgetItem, QHeaderView, QGraphicsScene, QGraphicsView,
     QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsLineItem, QLabel, QSizePolicy
 )
 from PyQt6.QtGui import QAction, QIcon, QPen, QPixmap
@@ -23,6 +23,7 @@ class MainWindow(QMainWindow):
         self.database_connection = DatabaseConnection(os.path.join(self.basedir, "current_session.db"))
 
         toolbar = QToolBar("Import NC1")
+        toolbar.setContextMenuPolicy(Qt.ContextMenuPolicy.PreventContextMenu)
         self.addToolBar(toolbar)
 
         # import_icon = QIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon))
@@ -107,6 +108,9 @@ class MainWindow(QMainWindow):
         self.part_list_widget.setAlternatingRowColors(True)
         self.part_list_widget.currentItemChanged.connect(self.part_list_index_changed)
 
+        self.table_unit_combobox = QComboBox()
+        self.table_unit_combobox.addItems(["mm", "inch"])
+        self.table_unit_combobox.currentIndexChanged.connect(self.table_unit_combobox_index_changed)
         self.create_part_info_table()
         self.create_hole_info_table()
 
@@ -121,6 +125,7 @@ class MainWindow(QMainWindow):
         self.create_part_views()
 
         table_layout = QVBoxLayout()
+        table_layout.addWidget(self.table_unit_combobox)
         table_layout.addWidget(self.part_info_table)
         table_layout.addWidget(self.hole_info_table)
 
@@ -177,13 +182,20 @@ class MainWindow(QMainWindow):
             self.hole_info_table.setRowCount(0)
             self.part_info_table.setRowCount(0)
     
+    def table_unit_combobox_index_changed(self):
+        current_item = self.part_list_widget.currentItem()
+        if current_item:
+            partmark = current_item.text()
+            self.populate_part_info_table(partmark)
+            self.populate_hole_info_table(partmark)
+    
     def create_part_info_table(self):
         self.part_info_table = QTableWidget(0, 4)
         self.part_info_table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
         self.part_info_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.part_info_table.setFixedWidth(350)
         self.part_info_table.setFixedHeight(50)
-        labels = ["Profile", "Len[mm*10]", "Hgt[mm*10]", "Wdt[mm*10]"]
+        labels = ["Profile", "Length", "Height", "Width"]
         self.part_info_table.setHorizontalHeaderLabels(labels)
         for i, label in enumerate(labels):
             self.part_info_table.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeMode.Stretch)
@@ -193,11 +205,18 @@ class MainWindow(QMainWindow):
 
         part_geometry = self.part_database.get_part_geometry(partmark)
         if part_geometry:
-            self.part_info_table.insertRow(0)
-            self.part_info_table.setItem(0, 0, QTableWidgetItem(part_geometry["profile"]))
-            self.part_info_table.setItem(0, 1, QTableWidgetItem(str(part_geometry["length"])))
-            self.part_info_table.setItem(0, 2, QTableWidgetItem(str(part_geometry["profile_depth"])))
-            self.part_info_table.setItem(0, 3, QTableWidgetItem(str(part_geometry["flange_height"])))
+            if self.table_unit_combobox.currentText() == "mm":
+                self.part_info_table.insertRow(0)
+                self.part_info_table.setItem(0, 0, QTableWidgetItem(part_geometry["profile"]))
+                self.part_info_table.setItem(0, 1, QTableWidgetItem(str(round(part_geometry["length"]/10, 1))))
+                self.part_info_table.setItem(0, 2, QTableWidgetItem(str(round(part_geometry["profile_depth"]/10, 1))))
+                self.part_info_table.setItem(0, 3, QTableWidgetItem(str(round(part_geometry["flange_height"]/10, 1))))
+            elif self.table_unit_combobox.currentText() == "inch":
+                self.part_info_table.insertRow(0)
+                self.part_info_table.setItem(0, 0, QTableWidgetItem(part_geometry["profile"]))
+                self.part_info_table.setItem(0, 1, QTableWidgetItem(str(round(part_geometry["length"]/254, 3))))
+                self.part_info_table.setItem(0, 2, QTableWidgetItem(str(round(part_geometry["profile_depth"]/254, 3))))
+                self.part_info_table.setItem(0, 3, QTableWidgetItem(str(round(part_geometry["flange_height"]/254, 3))))
 
     def create_hole_info_table(self):
         self.hole_info_table = QTableWidget(0, 4)

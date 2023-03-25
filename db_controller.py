@@ -133,6 +133,8 @@ class HoleDatabase:
         slot_x integer,
         slot_y integer,
         size text,
+        size_mm text,
+        size_inch text,
         x_distance integer,
         y_distance integer
         );"""
@@ -154,10 +156,12 @@ class HoleDatabase:
         slot_x,
         slot_y,
         size,
+        size_mm,
+        size_inch,
         x_distance,
         y_distance
         )
-        VALUES (?,?,?,?,?,?,?,?,?);"""
+        VALUES (?,?,?,?,?,?,?,?,?,?,?);"""
 
         cursor.execute(query, (
             part_id,
@@ -167,6 +171,8 @@ class HoleDatabase:
             round(hole.slot_x),
             round(hole.slot_y),
             hole.size,
+            hole.size_mm,
+            hole.size_inch,
             round(hole.x_distance),
             round(hole.y_distance)
             ))

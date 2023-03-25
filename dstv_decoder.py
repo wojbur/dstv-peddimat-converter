@@ -170,11 +170,15 @@ class Hole:
             self.slot_x = 0
             self.slot_y = 0
             self.size = str(round(self.diameter))
+            self.size_mm = str(round(self.diameter/10, 1))
+            self.size_inch = str(round(self.diameter/254, 3))
         else:
             self.slotted = True
             self.slot_x = float(self.hole_line[5])*10
             self.slot_y = float(self.hole_line[6])*10
             self.size = f"{round(self.diameter+self.slot_x)}X{round(self.diameter+self.slot_y)}"
+            self.size_mm = f"{round((self.diameter+self.slot_x)/10, 1)}X{round((self.diameter+self.slot_y)/10, 1)}"
+            self.size_inch = f"{round((self.diameter+self.slot_x)/254, 3)}X{round((self.diameter+self.slot_y)/254, 3)}"
 
     def get_hole_type(self) -> int:
         """Get type of hole from list of hole info row"""
