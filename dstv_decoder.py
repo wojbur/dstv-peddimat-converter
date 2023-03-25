@@ -196,10 +196,7 @@ class Hole:
     
     def get_x_distance(self) -> int:
         distance_string = self.hole_line[1][:-1]
-        x_distance = float(distance_string)*1000
-        if self.slotted:
-            x_distance = x_distance + (self.slot_x*50)
-        x_distance = x_distance
+        x_distance = float(distance_string)*1000 + self.slot_x*50
         return x_distance
     
     def get_y_distance(self) -> int:
@@ -220,11 +217,11 @@ class Hole:
             self.type = "std"
 
         if self.surface == "front" and self.part.profile_type == "t":
-            y_distance = float(distance_string)*1000
+            y_distance = float(distance_string)*1000 - self.slot_y*50
         elif self.surface == "front":
-            y_distance = self.part.profile_depth*100 - float(distance_string)*1000
+            y_distance = self.part.profile_depth*100 - float(distance_string)*1000 + self.slot_y*50
         else:
-            y_distance = float(distance_string)*1000
+            y_distance = float(distance_string)*1000 - self.slot_y*50
         return y_distance
 
 
