@@ -22,6 +22,8 @@ class MainWindow(QMainWindow):
         self.basedir = os.path.dirname(__file__)
         self.database_connection = DatabaseConnection(os.path.join(self.basedir, "current_session.db"))
 
+        self.setWindowIcon(QIcon(os.path.join(self.basedir, "Icons", "converter.png")))
+
         toolbar = QToolBar("Import NC1")
         toolbar.setContextMenuPolicy(Qt.ContextMenuPolicy.PreventContextMenu)
         self.addToolBar(toolbar)
@@ -109,7 +111,9 @@ class MainWindow(QMainWindow):
         self.part_list_widget.currentItemChanged.connect(self.part_list_index_changed)
 
         table_unit_label = QLabel("Table units:")
+        table_unit_label.setFixedWidth(75)
         self.table_unit_combobox = QComboBox()
+        self.table_unit_combobox.setFixedWidth(75)
         self.table_unit_combobox.addItems(["mm", "inch"])
         self.table_unit_combobox.currentIndexChanged.connect(self.table_unit_combobox_index_changed)
         self.create_part_info_table()
@@ -126,6 +130,7 @@ class MainWindow(QMainWindow):
         self.create_part_views()
 
         unit_layout = QHBoxLayout()
+        unit_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
         unit_layout.addWidget(table_unit_label)
         unit_layout.addWidget(self.table_unit_combobox)
 
@@ -204,6 +209,7 @@ class MainWindow(QMainWindow):
         self.part_info_table.setHorizontalHeaderLabels(labels)
         for i, label in enumerate(labels):
             self.part_info_table.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeMode.Stretch)
+        self.part_info_table.verticalHeader().setVisible(False)
     
     def populate_part_info_table(self, partmark):
         self.part_info_table.setRowCount(0)
@@ -232,6 +238,7 @@ class MainWindow(QMainWindow):
         self.hole_info_table.setHorizontalHeaderLabels(labels)
         for i, label in enumerate(labels):
             self.hole_info_table.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeMode.Stretch)
+        self.hole_info_table.verticalHeader().setVisible(False)
 
     def populate_hole_info_table(self, partmark):
         self.hole_info_table.setRowCount(0)
