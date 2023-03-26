@@ -3,9 +3,9 @@ import os
 import subprocess
 
 from PyQt6.QtWidgets import (
-    QStyle, QApplication, QMainWindow, QToolBar, QStatusBar, QSlider, QGridLayout, QVBoxLayout, QHBoxLayout, QFileDialog, QWidget,
+    QApplication, QMainWindow, QToolBar, QSlider, QGridLayout, QVBoxLayout, QHBoxLayout, QFileDialog, QWidget,
     QCheckBox, QComboBox, QListWidget, QTableWidget, QTableWidgetItem, QHeaderView, QGraphicsScene, QGraphicsView,
-    QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsLineItem, QLabel, QSizePolicy
+    QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsLineItem, QLabel, QSizePolicy, QMessageBox
 )
 from PyQt6.QtGui import QAction, QIcon, QPen, QPixmap
 from PyQt6.QtCore import Qt, QModelIndex
@@ -490,10 +490,18 @@ class MainWindow(QMainWindow):
 
         for filepath in filepaths:
             steel_part = SteelPart(filepath)
-            if steel_part.profile_type in self.valid_profile_types:
-                self.part_database.insert_data(steel_part)
-                for hole in steel_part.holes:
-                    self.hole_database.insert_data(hole)
+            if steel_part.correct_dstv_format:
+                if steel_part.profile_type in self.valid_profile_types:
+                    self.part_database.insert_data(steel_part)
+                    for hole in steel_part.holes:
+                        self.hole_database.insert_data(hole)
+            else:
+                dialog = QMessageBox(self)
+                dialog.setText(f'{filepath} has incorrect DSTV settings. Use CSS_DSTV export preset.')
+                dialog.setWindowTitle("Incorrect DSTV")
+                dialog.setIcon(QMessageBox.Icon.Warning)
+                dialog.exec()
+                
 
     def import_dstv(self):
         dialog = QFileDialog(self)

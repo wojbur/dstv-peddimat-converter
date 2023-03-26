@@ -1,4 +1,5 @@
 import re
+import os
 
 class SteelPart:
     """A class to store information about steel part geometry"""
@@ -11,22 +12,42 @@ class SteelPart:
         """
         self.dstv_content = self.get_dstv_content(path)
 
-        self.get_partmatk()
-        self.get_profile()
-        self.get_profile_type()
-        self.get_quantity()
-        self.get_profile_depth()
-        self.get_web_thickness()
-        self.get_flange_height()
-        self.get_flange_thickness()
-        self.get_length()
-        self.get_holes()
+        self.check_correct_dstv_format(path)
+
+        if self.correct_dstv_format:
+            self.get_partmatk()
+            self.get_profile()
+            self.get_profile_type()
+            self.get_quantity()
+            self.get_profile_depth()
+            self.get_web_thickness()
+            self.get_flange_height()
+            self.get_flange_thickness()
+            self.get_length()
+            self.get_holes()
     
     def get_dstv_content(self, path) -> str:
         """Return text content of given DSTV file"""
         with open(path, "r") as f:
             dstv_content = f.read()
         return dstv_content
+    
+    def check_correct_dstv_format(self, path):
+        """Check if the DSTV file has correct items order"""
+        # Check if row 4 contain partmark
+        partmark_filename = os.path.basename(path).split(".")[0]
+        partmark_dstv = self.dstv_content.splitlines()[3].strip()
+        if partmark_filename != partmark_dstv:
+            self.correct_dstv_format = False
+            return 
+        # Check if row 8 contain quantity of parts
+        try:
+            int(self.dstv_content.splitlines()[7].strip())
+        except ValueError:
+            self.correct_dstv_format = False
+            return
+        # All checks are correct
+        self.correct_dstv_format = True
 
     def get_partmatk(self) -> None:
         """Get part mark from DSTV file text content"""
